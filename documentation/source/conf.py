@@ -106,8 +106,8 @@ def run_cmake_doxygen():
 	xml_dir = os.path.join(cmake_dir, 'documentation/doxygen/xml')
 	os.makedirs(cmake_dir, exist_ok=True)
 	os.makedirs(xml_dir, exist_ok=True)
-	print("[ztd.text/documentation/conf.py] CMake Directory: %s" % cmake_dir)
-	print("[ztd.text/documentation/conf.py] XML Directory: %s" % xml_dir)
+	print(f"[ztd.text/documentation/conf.py] CMake Directory: {cmake_dir}")
+	print(f"[ztd.text/documentation/conf.py] XML Directory: {xml_dir}")
 
 	try:
 		retcode = subprocess.call(

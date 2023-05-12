@@ -49,18 +49,20 @@ parser.add_argument(
     'name and location of where to place file (and forward declaration file)',
     metavar='file',
     default=['single/include/ztd/text.hpp'])
-parser.add_argument('--input',
-                    '-i',
-                    help='the path to use to get to the ztd.text files',
-                    metavar='path',
-                    default=os.path.normpath(
-                        os.path.dirname(os.path.realpath(__file__)) +
-                        '/../include'))
+parser.add_argument(
+	'--input',
+	'-i',
+	help='the path to use to get to the ztd.text files',
+	metavar='path',
+	default=os.path.normpath(
+		f'{os.path.dirname(os.path.realpath(__file__))}/../include'
+	),
+)
 parser.add_argument('--quiet', help='suppress all output', action='store_true')
 args = parser.parse_args()
 
-single_file = ''
 forward_single_file = ''
+single_file = ''
 single_file = os.path.normpath(args.output[0])
 
 if len(args.output) > 1:
@@ -69,7 +71,8 @@ else:
 	a, b = os.path.splitext(single_file)
 	a = os.path.dirname(single_file)
 	forward_single_file = os.path.normpath(
-	    os.path.join(a + '/text', 'forward' + b))
+		os.path.join(f'{a}/text', f'forward{b}')
+	)
 
 single_file_dir = os.path.dirname(single_file)
 forward_single_file_dir = os.path.dirname(forward_single_file)
@@ -141,30 +144,28 @@ forward_detail_cpp = re.compile(r'ZTD_TEXT_FORWARD_DETAIL_HPP')
 
 
 def get_include(line, base_path):
-	local_match = local_include.match(line)
-	if local_match:
-		# local include found
-		full_path = os.path.normpath(
-		    os.path.join(base_path,
-		                 local_match.group(2))).replace('\\', '/')
-		return full_path
-	project_match = project_include.match(line)
-	if project_match:
-		# project include found
-		full_path = os.path.normpath(
-		    os.path.join(project_path,
-		                 project_match.group(2))).replace('\\', '/')
-		return full_path
+	if local_match := local_include.match(line):
+		return os.path.normpath(
+			os.path.join(base_path, local_match.group(2))
+		).replace('\\', '/')
+	if project_match := project_include.match(line):
+		return os.path.normpath(
+			os.path.join(project_path, project_match.group(2))
+		).replace('\\', '/')
 	return None
 
 
 def is_include_guard(line):
-	is_regular_guard = ifndef_cpp.match(line) or define_cpp.match(
-	    line) or endif_cpp.match(line) or pragma_once_cpp.match(line)
-	if is_regular_guard:
+	if (
+		is_regular_guard := ifndef_cpp.match(line)
+		or define_cpp.match(line)
+		or endif_cpp.match(line)
+		or pragma_once_cpp.match(line)
+	):
 		return not forward_cpp.search(
 		    line) and not forward_detail_cpp.search(line)
-	return is_regular_guard
+	else:
+		return is_regular_guard
 
 
 def get_revision():
@@ -187,9 +188,9 @@ def process_file(filename, out):
 	includes.add(filename)
 
 	if not args.quiet:
-		print('processing {}'.format(filename))
+		print(f'processing {filename}')
 
-	out.write('// beginning of {}\n\n'.format(relativefilename))
+	out.write(f'// beginning of {relativefilename}\n\n')
 	empty_line_state = True
 
 	with open(filename, 'r', encoding='utf-8') as f:
@@ -205,18 +206,13 @@ def process_file(filename, out):
 			# get relative directory
 			base_path = os.path.dirname(filename)
 
-			# check if it's a standard file
-			std = standard_include.search(line)
-			if std:
+			if std := standard_include.search(line):
 				std_file = os.path.join('std', std.group(0))
 				#if std_file in includes:
 				#	continue
 				includes.add(std_file)
 
-			# see if it's an include file
-			name = get_include(line, base_path)
-
-			if name:
+			if name := get_include(line, base_path):
 				process_file(name, out)
 				continue
 
@@ -230,7 +226,7 @@ def process_file(filename, out):
 			# line is fine
 			out.write(line)
 
-	out.write('// end of {}\n\n'.format(relativefilename))
+	out.write(f'// end of {relativefilename}\n\n')
 
 
 version = get_version()
@@ -250,7 +246,7 @@ forward_result = ''
 if not args.quiet:
 	print('Current version: {version} (revision {revision})'.format(
 	    version=version, revision=revision))
-	print('Project path: {}\n'.format(project_path))
+	print(f'Project path: {project_path}\n')
 	print('Creating single header for ztd.text')
 
 ss = StringIO()
@@ -262,7 +258,7 @@ ss.write(
 for processed_file in processed_files:
 	process_file(processed_file, ss)
 
-ss.write('#endif // {}\n'.format(include_guard))
+ss.write(f'#endif // {include_guard}\n')
 result = ss.getvalue()
 ss.close()
 
@@ -282,7 +278,7 @@ forward_ss.write(
 for forward_processed_file in forward_processed_files:
 	process_file(forward_processed_file, forward_ss)
 
-forward_ss.write('#endif // {}\n'.format(forward_include_guard))
+forward_ss.write(f'#endif // {forward_include_guard}\n')
 forward_result = forward_ss.getvalue()
 forward_ss.close()
 
@@ -296,10 +292,10 @@ os.makedirs(forward_single_file_dir, exist_ok=True)
 
 with open(single_file, 'w', encoding='utf-8') as f:
 	if not args.quiet:
-		print('writing {}...'.format(single_file))
+		print(f'writing {single_file}...')
 	f.write(result)
 
 with open(forward_single_file, 'w', encoding='utf-8') as f:
 	if not args.quiet:
-		print('writing {}...'.format(forward_single_file))
+		print(f'writing {forward_single_file}...')
 	f.write(forward_result)
